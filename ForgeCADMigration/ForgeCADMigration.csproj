@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="Controllers\DesignAutomationController.cs~RFaf3768.TMP" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Autodesk.Forge" Version="1.7.0" />
+    <PackageReference Include="Autodesk.Forge.DesignAutomation" Version="3.0.2" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="3.1.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="wwwroot\bundles\" />
+  </ItemGroup>
+
+</Project>

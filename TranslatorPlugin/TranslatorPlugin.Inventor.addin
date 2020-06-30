@@ -1,0 +1,8 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Addin Type="Plugin">
+  <ClassId>{ec73b316-e26a-4e37-ae8e-b6221646d182}</ClassId>
+  <ClientId>{ec73b316-e26a-4e37-ae8e-b6221646d182}</ClientId>
+  <DisplayName>TranslatorPlugin</DisplayName>
+  <Description>a TranslatorPlugin</Description>
+  <Assembly>TranslatorPlugin.dll</Assembly>
+</Addin>
