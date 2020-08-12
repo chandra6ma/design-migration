@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30114.105
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ForgeCADMigration", "ForgeCADMigration\ForgeCADMigration.csproj", "{228A03A8-3AC3-4583-B4DA-37FFBC6EFCCA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ForgeCADMigration", "ForgeCADMigration\ForgeCADMigration.csproj", "{FD84EBC0-ED5C-4A05-A88B-D6C24D697374}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TranslatorPlugin", "TranslatorPlugin\TranslatorPlugin.csproj", "{C7BA2CC0-30A9-4DAE-ACD9-0BF8D16EA244}"
 EndProject
@@ -13,10 +13,10 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{228A03A8-3AC3-4583-B4DA-37FFBC6EFCCA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{228A03A8-3AC3-4583-B4DA-37FFBC6EFCCA}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{228A03A8-3AC3-4583-B4DA-37FFBC6EFCCA}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{228A03A8-3AC3-4583-B4DA-37FFBC6EFCCA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FD84EBC0-ED5C-4A05-A88B-D6C24D697374}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FD84EBC0-ED5C-4A05-A88B-D6C24D697374}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FD84EBC0-ED5C-4A05-A88B-D6C24D697374}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FD84EBC0-ED5C-4A05-A88B-D6C24D697374}.Release|Any CPU.Build.0 = Release|Any CPU
 		{C7BA2CC0-30A9-4DAE-ACD9-0BF8D16EA244}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{C7BA2CC0-30A9-4DAE-ACD9-0BF8D16EA244}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C7BA2CC0-30A9-4DAE-ACD9-0BF8D16EA244}.Release|Any CPU.ActiveCfg = Release|Any CPU
