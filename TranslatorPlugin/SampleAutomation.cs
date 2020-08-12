@@ -35,85 +35,41 @@ namespace TranslatorPlugin
         public void Run(Document doc)
         {
             try
-            {
-                //string strCLSID = "{93D506C4-8355-4E28-9C4E-C2B5F1EDC6AE}";
-                //string strFileName = doc.FullDocumentName;
-
-                //ApplicationAddIns oAddIns = m_server.ApplicationAddIns;
-
-                //// Find the NX translator, get the CLSID and activate it.
-                //TranslatorAddIn oTransAddIn = (Inventor.TranslatorAddIn)oAddIns.ItemById[strCLSID];
-                //oTransAddIn.Activate();
-
-                ////Get the transient object and take it as a factory to produce other objects.
-                //TransientObjects transientObj = m_server.TransientObjects; 
-
-                //// Prepare the first parameter for Open(), the file name.
-                //DataMedium file = transientObj.CreateDataMedium();
-                //file.FileName = strFileName; 
-
-                //// Prepare the second parameter for Open(), the open type.
-                //TranslationContext context = (Inventor.TranslationContext)transientObj.CreateTranslationContext();
-                //context.Type = IOMechanismEnum.kDataDropIOMechanism;
-
-
-                //// Prepare the third parameter for Open(), the options.
-                //NameValueMap options = transientObj.CreateNameValueMap();
-                //options.Value["SaveComponentDuringLoad"] = false;
-                //options.Value["SaveLocationIndex"] = 0;
-                //options.Value["ComponentDestFolder"] = "";
-                //options.Value["SaveAssemSeperateFolder"] = false;
-                //options.Value["AssemDestFolder"] = "";
-                //options.Value["ImportSolid"] = true ;
-                //options.Value["ImportSurface"] = true ;
-                //options.Value["ImportWire"] = true ;
-                //options.Value["ImportWorkPlane"] = true ;
-                //options.Value["ImportWorkAxe"] = true;
-                //options.Value["ImportWorkPoint"] = true ;
-                //options.Value["ImportPoint"] = true ;
-                //options.Value["ImportAASP"] = false ;
-                //options.Value["ImportAASPIndex"] = 0;
-                //options.Value["CreateSurfIndex"] = 1;
-                //options.Value["GroupNameIndex"] = 0;
-                //options.Value["GroupName"] = "";
-                //options.Value["ImportUnit"] = 0;
-                //options.Value["CheckDuringLoad"] = false ;
-                //options.Value["AutoStitchAndPromote"] = true ;
-                //options.Value["AdvanceHealing"] = false ;
-
-
-                //options.Value["CHKSearchFolder"] = true ;
-
-
-                ////100 is the search folder maximum that you can specify.
-                ////Assign separate search folder one by one.
-
-                //string[]  searchFolder = new string[100];
-
-                //options.Value["SearchFolder"] = searchFolder;
-
-
-                ////Prepare the fourth parameter for Open(), the final document
-
-                //Object sourceObj;
-
-                ////Open the NX file.
-                //oTransAddIn.Open(file, context, options, out sourceObj);
-                //m_server.Documents.Open(doc.FullDocumentName);
-                // generate outputs
-                //var docDir = System.IO.Path.GetDirectoryName(doc.FullFileName);
+            {                 
                 var docDir = System.IO.Directory.GetCurrentDirectory();
                 LogTrace(doc.DocumentType.ToString());
                 // save output file
                 var documentType = doc.DocumentType;
-                //if (documentType == DocumentTypeEnum.kPartDocumentObject)
-                //{
+                if (documentType == DocumentTypeEnum.kPartDocumentObject)
+                {
                     // the name must be in sync with OutputIpt localName in Activity
                     var fileName = System.IO.Path.Combine(docDir, "outputFile.ipt");
 
                     // save file                                                                
                     doc.SaveAs(fileName, false);
-                //}
+                }
+                else if (documentType == DocumentTypeEnum.kAssemblyDocumentObject)
+                {
+                     
+                    // the name must be in sync with OutputIpt localName in Activity
+                    var fileName = System.IO.Path.Combine(docDir, "inputFile\\" + doc.DisplayName);
+
+                    // save file                                                                
+                    doc.SaveAs(fileName, false);
+                    m_server.SaveOptions.TranslatorReportLocation = ReportLocationEnum.kNoReport;
+                    
+                    //int cnt = doc.File.AllReferencedFiles.Count;
+                    LogTrace("List of reference files ");
+                    foreach (Inventor.File f in doc.File.AllReferencedFiles)
+                    {
+                        var refrencefile = m_server.Documents.Open(f.FullFileName, false);
+                        refrencefile.SaveAs(System.IO.Path.Combine(docDir, "inputFile" , System.IO.Path.GetFileName(f.FullFileName)),true);
+                                               
+                        LogTrace(f.FullFileName);
+                    }
+                    
+                    
+                }
             }
             catch (Exception e) { LogTrace("Processing failed: {0}", e.ToString()); }
         }          

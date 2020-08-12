@@ -10,7 +10,14 @@
   "profiles": {
     "IIS Express": {
       "commandName": "IISExpress",
-      "launchBrowser": true
+      "launchBrowser": true,
+      "environmentVariables": {
+        "FORGE_CLIENT_SECRET": "L3f6ad42428524b1",
+        "ASPNETCORE_URLS": "http://localhost:3000",
+        "FORGE_CLIENT_ID": "yJ9KNtu6jYClEQSfs01WZmCBNsu4A1he",
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "FORGE_WEBHOOK_URL": "http://f13f41004101.ngrok.io"
+      }
     },
     "ForgeCADMigration": {
       "commandName": "Project",

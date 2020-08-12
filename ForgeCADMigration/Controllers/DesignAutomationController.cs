@@ -11,7 +11,9 @@ using Newtonsoft.Json.Linq;
 using RestSharp;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Threading.Tasks;
 using Activity = Autodesk.Forge.DesignAutomation.Model.Activity;
@@ -162,45 +164,85 @@ namespace ForgeCADMigration.Controllers
         /// </summary>
         [HttpPost]
         [Route("api/forge/designautomation/activities")]
-        public async Task<IActionResult> CreateActivity()
+        public async Task<IActionResult> CreateActivity(string fileType)
         { 
             // standard name for this sample
             string appBundleName = zipFileName + "AppBundle";
-            string activityName = zipFileName + "Activity";
-
-            // 
-            Page<string> activities = await _designAutomation.GetActivitiesAsync();
-            string qualifiedActivityId = string.Format("{0}.{1}+{2}", NickName, activityName, Alias);
-            if (!activities.Data.Contains(qualifiedActivityId))
+            string activityName = "";
+            if (fileType == "part")
             {
-                // define the activity
-                // ToDo: parametrize for different engines...
-                dynamic engineAttributes = EngineAttributes(engineName);
-                string commandLine = string.Format(engineAttributes.commandLine, appBundleName);
-                Activity activitySpec = new Activity()
+                activityName = zipFileName + "Activity";
+                Page<string> activities = await _designAutomation.GetActivitiesAsync();
+                string qualifiedActivityId = string.Format("{0}.{1}+{2}", NickName, activityName, Alias);
+                if (!activities.Data.Contains(qualifiedActivityId))
                 {
-                    Id = activityName,
-                    Appbundles = new List<string>() { string.Format("{0}.{1}+{2}", NickName, appBundleName, Alias) },
-                    CommandLine = new List<string>() { commandLine },
-                    Engine = engineName,
-                    Parameters = new Dictionary<string, Parameter>()
+                    // define the activity
+                    // ToDo: parametrize for different engines...
+                    dynamic engineAttributes = EngineAttributes(engineName);
+                    string commandLine = string.Format(engineAttributes.commandLine, appBundleName);
+                    Activity activitySpec = new Activity()
+                    {
+                        Id = activityName,
+                        Appbundles = new List<string>() { string.Format("{0}.{1}+{2}", NickName, appBundleName, Alias) },
+                        CommandLine = new List<string>() { commandLine },
+                        Engine = engineName,
+                        Parameters = new Dictionary<string, Parameter>()
             {
-                { "inputFile", new Parameter() { Description = "input file", LocalName = "$(inputFile)", Ondemand = false, Required = true, Verb = Verb.Get, Zip = false } },                
+                { "inputFile", new Parameter() { Description = "input file", LocalName = "$(inputFile)", Ondemand = false, Required = true, Verb = Verb.Get, Zip = false } },
                 { "outputFile", new Parameter() { Description = "output file", LocalName = "outputFile." + engineAttributes.extension, Ondemand = false, Required = true, Verb = Verb.Put, Zip = false } }
             },
-                    Settings = new Dictionary<string, ISetting>()
+                        Settings = new Dictionary<string, ISetting>()
             {
                 { "script", new StringSetting(){ Value = engineAttributes.script } }
             }
-                };
-                Activity newActivity = await _designAutomation.CreateActivityAsync(activitySpec);
+                    };
+                    Activity newActivity = await _designAutomation.CreateActivityAsync(activitySpec);
 
-                // specify the alias for this Activity
-                Alias aliasSpec = new Alias() { Id = Alias, Version = 1 };
-                Alias newAlias = await _designAutomation.CreateActivityAliasAsync(activityName, aliasSpec);
+                    // specify the alias for this Activity
+                    Alias aliasSpec = new Alias() { Id = Alias, Version = 1 };
+                    Alias newAlias = await _designAutomation.CreateActivityAliasAsync(activityName, aliasSpec);
 
-                return Ok(new { Activity = qualifiedActivityId });
+                    return Ok(new { Activity = qualifiedActivityId });
+                }
             }
+            else if (fileType == "assembly")
+            {
+                activityName = zipFileName + "ActivityAsy";
+                Page<string> activities = await _designAutomation.GetActivitiesAsync();
+                string qualifiedActivityId = string.Format("{0}.{1}+{2}", NickName, activityName, Alias);
+                if (!activities.Data.Contains(qualifiedActivityId))
+                {
+                    // define the activity
+                    // ToDo: parametrize for different engines...
+                    dynamic engineAttributes = EngineAttributes(engineName);
+                    string commandLine = string.Format(engineAttributes.commandLine, appBundleName);
+                    Activity activitySpec = new Activity()
+                    {
+                        Id = activityName,
+                        Appbundles = new List<string>() { string.Format("{0}.{1}+{2}", NickName, appBundleName, Alias) },
+                        CommandLine = new List<string>() { commandLine },
+                        Engine = engineName,
+                        Parameters = new Dictionary<string, Parameter>()
+            {
+                { "inputFile", new Parameter() { Description = "input file", LocalName = "inputFile", Ondemand = false, Required = true, Verb = Verb.Get, Zip = true  } },
+                { "outputFile", new Parameter() { Description = "output file", LocalName = "inputFile", Ondemand = false, Required = true, Verb = Verb.Put, Zip = true  } }
+            },
+                        Settings = new Dictionary<string, ISetting>()
+            {
+                { "script", new StringSetting(){ Value = engineAttributes.script } }
+            }
+                    };
+                    Activity newActivity = await _designAutomation.CreateActivityAsync(activitySpec);
+
+                    // specify the alias for this Activity
+                    Alias aliasSpec = new Alias() { Id = Alias, Version = 1 };
+                    Alias newAlias = await _designAutomation.CreateActivityAliasAsync(activityName, aliasSpec);
+
+                    return Ok(new { Activity = qualifiedActivityId });
+                }
+            }
+            // 
+            
 
             // as this activity points to a AppBundle "dev" alias (which points to the last version of the bundle),
             // there is no need to update it (for this sample), but this may be extended for different contexts
@@ -231,88 +273,207 @@ namespace ForgeCADMigration.Controllers
         public async Task<IActionResult> StartWorkitem([FromForm] StartWorkitemInput input)
         {
             // basic input validation
+            WorkItemStatus workItemStatus = null;
             JObject workItemData = JObject.Parse(input.data);
 
             string browerConnectionId = workItemData["browerConnectionId"].Value<string>();
+            string fileType = workItemData["fileType"].Value<string>();
             string activityName = string.Format("{0}.{1}", NickName, workItemData["activityName"].Value<string>());
             List<string> activityList = await GetDefinedActivities();
             if (!activityList.Contains(workItemData["activityName"].Value<string>()))
             {
                 await CreateAppBundle();
-                await CreateActivity();
+                await CreateActivity(fileType);
             }
-
-            // save the file on the server
-            var fileSavePath = Path.Combine(_env.ContentRootPath, Path.GetFileName(input.inputFile.FileName));
-            using (var stream = new FileStream(fileSavePath, FileMode.Create)) await input.inputFile.CopyToAsync(stream);
-
-            // OAuth token
-            dynamic oauth = await OAuthController.GetInternalAsync();
-
-            // upload file to OSS Bucket
-            // 1. ensure bucket existis
-            string bucketKey = NickName.ToLower() + "-designautomation";
-            BucketsApi buckets = new BucketsApi();
-            buckets.Configuration.AccessToken = oauth.access_token;
-            try
+            if (fileType == "assembly")
             {
-                PostBucketsPayload bucketPayload = new PostBucketsPayload(bucketKey, null, PostBucketsPayload.PolicyKeyEnum.Transient);
-                await buckets.CreateBucketAsync(bucketPayload, "US");
-            }
-            catch { }; // in case bucket already exists
-                       // 2. upload inputFile
-            string inputFileNameOSS = string.Format("{0}_input_{1}", DateTime.Now.ToString("yyyyMMddhhmmss"), Path.GetFileName(input.inputFile.FileName)); // avoid overriding
-            ObjectsApi objects = new ObjectsApi();
-            objects.Configuration.AccessToken = oauth.access_token;
-            using (StreamReader streamReader = new StreamReader(fileSavePath))
-                await objects.UploadObjectAsync(bucketKey, inputFileNameOSS, (int)streamReader.BaseStream.Length, streamReader.BaseStream, "application/octet-stream");
-            System.IO.File.Delete(fileSavePath);// delete server copy
+                string path = _env.ContentRootPath;
+                Trace.TraceInformation("Zipping started");
+                string fileSavePath = await CreateZipFileStreamAsync(input.inputFile, input.inputFiles, path);
 
-            // prepare workitem arguments
-            // 1. input file
-            XrefTreeArgument inputFileArgument = new XrefTreeArgument()
-            {
-                Url = string.Format("https://developer.api.autodesk.com/oss/v2/buckets/{0}/objects/{1}", bucketKey, inputFileNameOSS),
-                Headers = new Dictionary<string, string>()
+                // OAuth token
+                dynamic oauth = await OAuthController.GetInternalAsync();
+
+                // upload file to OSS Bucket
+                // 1. ensure bucket existis
+                string bucketKey = NickName.ToLower() + "-designautomation";
+                BucketsApi buckets = new BucketsApi();
+                buckets.Configuration.AccessToken = oauth.access_token;
+                try
+                {
+                    PostBucketsPayload bucketPayload = new PostBucketsPayload(bucketKey, null, PostBucketsPayload.PolicyKeyEnum.Transient);
+                    await buckets.CreateBucketAsync(bucketPayload, "US");
+                }
+                catch { }; // in case bucket already exists
+                           // 2. upload inputFile
+                string inputFileNameOSS = string.Format("{0}_input_{1}", DateTime.Now.ToString("yyyyMMddhhmmss"), Path.GetFileName(fileSavePath)); // avoid overriding
+                ObjectsApi objects = new ObjectsApi();
+                objects.Configuration.AccessToken = oauth.access_token;
+                using (StreamReader streamReader = new StreamReader(fileSavePath))
+                    await objects.UploadObjectAsync(bucketKey, inputFileNameOSS, (int)streamReader.BaseStream.Length, streamReader.BaseStream, "application/octet-stream");
+                System.IO.File.Delete(fileSavePath);// delete server copy
+
+                // prepare workitem arguments
+                // 1. input file
+                XrefTreeArgument inputFileArgument = new XrefTreeArgument()
+                {
+                    Url = string.Format("https://developer.api.autodesk.com/oss/v2/buckets/{0}/objects/{1}", bucketKey, inputFileNameOSS),
+                    PathInZip = input.inputFile.FileName,
+                    Headers = new Dictionary<string, string>()
         {
             { "Authorization", "Bearer " + oauth.access_token }
         }
-            };
+                };
 
-            // 2. output file
-            //string outputFileNameOSS = string.Format("{0}_output_{1}", DateTime.Now.ToString("yyyyMMddhhmmss"), Path.GetFileName(input.inputFile.FileName)); // avoid overriding
-            string outputFileNameOSS = string.Format("{0}_output_{1}.ipt", DateTime.Now.ToString("yyyyMMddhhmmss"), Path.GetFileName(input.inputFile.FileName)); // avoid overriding
-            XrefTreeArgument outputFileArgument = new XrefTreeArgument()
-            {
-                Url = string.Format("https://developer.api.autodesk.com/oss/v2/buckets/{0}/objects/{1}", bucketKey, outputFileNameOSS),
-                Verb = Verb.Put,
-                Headers = new Dictionary<string, string>()
+                // 2. output file
+                //string outputFileNameOSS = string.Format("{0}_output_{1}", DateTime.Now.ToString("yyyyMMddhhmmss"), Path.GetFileName(input.inputFile.FileName)); // avoid overriding
+                //string outputFileNameOSS = string.Format("{0}_output_{1}.zip", DateTime.Now.ToString("yyyyMMddhhmmss"), Path.GetFileName(input.inputFile.FileName)); // avoid overriding
+                string outputFileNameOSS = string.Format("{0}_output_{1}.zip", DateTime.Now.ToString("yyyyMMddhhmmss"), Path.GetFileName(input.inputFile.FileName)); // avoid overriding
+                XrefTreeArgument outputFileArgument = new XrefTreeArgument()
+                {
+                    Url = string.Format("https://developer.api.autodesk.com/oss/v2/buckets/{0}/objects/{1}", bucketKey, outputFileNameOSS),
+                    Verb = Verb.Put,
+                    Headers = new Dictionary<string, string>()
             {
                 {"Authorization", "Bearer " + oauth.access_token }
             }
-            };
+                };
 
-            // prepare & submit workitem
-            // the callback contains the connectionId (used to identify the client) and the outputFileName of this workitem
-            string callbackUrl = string.Format("{0}/api/forge/callback/designautomation?id={1}&outputFileName={2}", OAuthController.GetAppSetting("FORGE_WEBHOOK_URL"), browerConnectionId, outputFileNameOSS);
-            WorkItem workItemSpec = new WorkItem()
-            {
-                ActivityId = activityName,
-                Arguments = new Dictionary<string, IArgument>()
+                // prepare & submit workitem
+                // the callback contains the connectionId (used to identify the client) and the outputFileName of this workitem
+                string callbackUrl = string.Format("{0}/api/forge/callback/designautomation?id={1}&outputFileName={2}&name={3}&type={4}", OAuthController.GetAppSetting("FORGE_WEBHOOK_URL"), browerConnectionId, outputFileNameOSS, Path.GetFileNameWithoutExtension(input.inputFile.FileName),fileType);
+                WorkItem workItemSpec = new WorkItem()
+                {
+                    ActivityId = activityName,
+                    Arguments = new Dictionary<string, IArgument>()
         {
             { "inputFile", inputFileArgument },
             { "outputFile", outputFileArgument },
             { "onComplete", new XrefTreeArgument { Verb = Verb.Post, Url = callbackUrl } }
         }
-            };
-            WorkItemStatus workItemStatus = await _designAutomation.CreateWorkItemAsync(workItemSpec);
+                };
+                workItemStatus = await _designAutomation.CreateWorkItemAsync(workItemSpec);
+            }
+            else if (fileType == "part")
+            {
+                // save the file on the server
+                var fileSavePath = Path.Combine(_env.ContentRootPath, Path.GetFileName(input.inputFile.FileName));
+                using (var stream = new FileStream(fileSavePath, FileMode.Create)) await input.inputFile.CopyToAsync(stream);
+
+                // OAuth token
+                dynamic oauth = await OAuthController.GetInternalAsync();
+
+                // upload file to OSS Bucket
+                // 1. ensure bucket existis
+                string bucketKey = NickName.ToLower() + "-designautomation";
+                BucketsApi buckets = new BucketsApi();
+                buckets.Configuration.AccessToken = oauth.access_token;
+                try
+                {
+                    PostBucketsPayload bucketPayload = new PostBucketsPayload(bucketKey, null, PostBucketsPayload.PolicyKeyEnum.Transient);
+                    await buckets.CreateBucketAsync(bucketPayload, "US");
+                }
+                catch { }; // in case bucket already exists
+                           // 2. upload inputFile
+                string inputFileNameOSS = string.Format("{0}_input_{1}", DateTime.Now.ToString("yyyyMMddhhmmss"), Path.GetFileName(input.inputFile.FileName)); // avoid overriding
+                ObjectsApi objects = new ObjectsApi();
+                objects.Configuration.AccessToken = oauth.access_token;
+                using (StreamReader streamReader = new StreamReader(fileSavePath))
+                    await objects.UploadObjectAsync(bucketKey, inputFileNameOSS, (int)streamReader.BaseStream.Length, streamReader.BaseStream, "application/octet-stream");
+                System.IO.File.Delete(fileSavePath);// delete server copy
+
+                // prepare workitem arguments
+                // 1. input file
+                XrefTreeArgument inputFileArgument = new XrefTreeArgument()
+                {
+                    Url = string.Format("https://developer.api.autodesk.com/oss/v2/buckets/{0}/objects/{1}", bucketKey, inputFileNameOSS),
+                    Headers = new Dictionary<string, string>()
+        {
+            { "Authorization", "Bearer " + oauth.access_token }
+        }
+                };
+
+                // 2. output file
+                //string outputFileNameOSS = string.Format("{0}_output_{1}", DateTime.Now.ToString("yyyyMMddhhmmss"), Path.GetFileName(input.inputFile.FileName)); // avoid overriding
+                string outputFileNameOSS = string.Format("{0}_output_{1}.ipt", DateTime.Now.ToString("yyyyMMddhhmmss"), Path.GetFileName(input.inputFile.FileName)); // avoid overriding
+                XrefTreeArgument outputFileArgument = new XrefTreeArgument()
+                {
+                    Url = string.Format("https://developer.api.autodesk.com/oss/v2/buckets/{0}/objects/{1}", bucketKey, outputFileNameOSS),
+                    Verb = Verb.Put,
+                    Headers = new Dictionary<string, string>()
+            {
+                {"Authorization", "Bearer " + oauth.access_token }
+            }
+                };
+
+                // prepare & submit workitem
+                // the callback contains the connectionId (used to identify the client) and the outputFileName of this workitem
+                string callbackUrl = string.Format("{0}/api/forge/callback/designautomation?id={1}&outputFileName={2}&name={3}&type={4}", OAuthController.GetAppSetting("FORGE_WEBHOOK_URL"), browerConnectionId, outputFileNameOSS, "",fileType);
+                WorkItem workItemSpec = new WorkItem()
+                {
+                    ActivityId = activityName,
+                    Arguments = new Dictionary<string, IArgument>()
+        {
+            { "inputFile", inputFileArgument },
+            { "outputFile", outputFileArgument },
+            { "onComplete", new XrefTreeArgument { Verb = Verb.Post, Url = callbackUrl } }
+        }
+                };
+                workItemStatus = await _designAutomation.CreateWorkItemAsync(workItemSpec);
+            }
+
+            
 
             return Ok(new { WorkItemId = workItemStatus.Id });
+        }
+
+
+        private static async Task<string> CreateZipFileStreamAsync(IFormFile file, IFormFile[] files, string contentPath)
+        {
+            Trace.TraceInformation("Zip entered");
+            string assyZipPath = "";
+            string  fileSavePath = Path.Combine(contentPath, Path.GetFileName(file.FileName));
+            using (var stream = new FileStream(fileSavePath, FileMode.Create)) await file.CopyToAsync(stream);
+            List<FileInfo> fileInfos = new List<FileInfo>();
+            FileInfo info = new FileInfo(fileSavePath);
+            fileInfos.Add(info);
+            foreach (var f in files)
+            {
+                string temp = Path.Combine(contentPath, Path.GetFileName(f.FileName));
+                using (var stream = new FileStream(temp, FileMode.Create)) await f.CopyToAsync(stream);
+                info = new FileInfo(temp);
+                fileInfos.Add(info);
+            }
+            ZipArchiveEntry zipArchiveEntry;
+            string archiveName = Path.GetFileName(file.FileName);
+            using (var archiveStream = new MemoryStream())
+            { 
+                using (ZipArchive archive = new ZipArchive(archiveStream, System.IO.Compression.ZipArchiveMode.Create, true))
+                {
+                    foreach (var item in fileInfos)
+                    {
+                        zipArchiveEntry = archive.CreateEntryFromFile(item.FullName, item.Name, CompressionLevel.Fastest);
+                        item.Delete();
+                    }
+
+                    archive.Dispose();
+                    
+                }
+                
+                assyZipPath = contentPath + @"\" + archiveName + ".zip";
+                using (var fileStream = new FileStream(assyZipPath, FileMode.Create))
+                {
+                    archiveStream.Seek(0, SeekOrigin.Begin);
+                    archiveStream.CopyTo(fileStream);
+                }
+            }
+            Trace.TraceInformation("Zip exited");
+            return assyZipPath;
         }
         /// <summary>
         /// Translate object
         /// </summary>
-        private async Task<dynamic> TranslateObject(dynamic objModel, string outputFileName)
+        private async Task<dynamic> TranslateObject(dynamic objModel, string outputFileName, bool compressed)
         {
             dynamic oauth = await OAuthController.GetInternalAsync();
             string objectIdBase64 = ToBase64(objModel.objectId);
@@ -329,7 +490,7 @@ namespace ForgeCADMigration.Controllers
             };
             JobPayload job;
             job = new JobPayload(
-                new JobPayloadInput(objectIdBase64, false, outputFileName),
+                new JobPayloadInput(objectIdBase64, compressed, outputFileName),
                 new JobPayloadOutput(postTranslationOutput)
                 );
 
@@ -366,6 +527,7 @@ namespace ForgeCADMigration.Controllers
         public class StartWorkitemInput
         {
             public IFormFile inputFile { get; set; }
+            public IFormFile[] inputFiles { get; set;}
             public string data { get; set; }
         }
         /// <summary>
@@ -373,7 +535,7 @@ namespace ForgeCADMigration.Controllers
         /// </summary>
         [HttpPost]
         [Route("/api/forge/callback/designautomation")]
-        public async Task<IActionResult> OnCallback(string id, string outputFileName, [FromBody] dynamic body)
+        public async Task<IActionResult> OnCallback(string id, string outputFileName, string name,string type, [FromBody] dynamic body)
         {
             try
             {
@@ -383,9 +545,16 @@ namespace ForgeCADMigration.Controllers
                 ObjectsApi objectsApi = new ObjectsApi();
                 objectsApi.Configuration.AccessToken = oauth.access_token;
                 dynamic objIPT = await objectsApi.GetObjectDetailsAsync(bucketkey, outputFileName);
-                
 
-                dynamic urnIPT = TranslateObject(objIPT, outputFileName); 
+                dynamic urnIPT = null;
+                if (type == "part")
+                {
+                    urnIPT = TranslateObject(objIPT, outputFileName, false);
+                }
+                else if (type == "assembly")
+                {
+                    urnIPT = TranslateObject(objIPT, name + ".iam", true);
+                }
 
                 await _hubContext.Clients.Client(id).SendAsync("onComplete", (string)await urnIPT);
 

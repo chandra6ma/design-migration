@@ -15,6 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Output\" />
     <Folder Include="wwwroot\bundles\" />
   </ItemGroup>
 

@@ -19,8 +19,8 @@
     <!-- this project files -->
     <link href="css/main.css" rel="stylesheet" /> 
     <!-- Files for this project -->
-    <script src="/js/ForgeDesignAutomation.js"></script>
-    <script src="js/ForgeViewer.js"></script>
+    <script src="js/ForgeDesignAutomation.js"></script>
+    <script src="js/ForgeViewer.js"></script> 
     
 </head>
 
@@ -35,24 +35,60 @@
                              height="20">
                     </a>
                 </li>
-            </ul>            
+            </ul>
+            <ul class="nav navbar-nav navbar-right">
+                <li>
+                    <a href="https://github.com/chandra6ma/design-migration" target="_blank">
+                        <img src="/images/GitHub.png" height="30">
+                    </a>
+                </li>
+            </ul>
         </div>
     </nav>
     <!-- End of navbar -->
     <div class="container-fluid" style="margin-top: 70px;">
-        <div class="row">
-            <div class="col-sm-4">
-                <div class="form-group">
-                    <label for="inputFile">Upload file to translate into Inventor file</label>
-                    <input type="file" class="form-control-file" id="inputFile" accept=".cgr,.prt,.sldprt,.CATPart,.CATProduct,.model,.session,.exp,.dlv3,.igs,.ige,.iges,.jt,.rvt,.3dm,.stp,.ste,.step,.stpz,.sat,.smt,.stl,.stla,.stlb,.par, .psm,.dwf,.dwfx,.dxf,.dwg">
+        <div class="row"> 
+            <div class="col-sm-4" style="margin-left:20px">
+                <div class="row" style="margin-bottom:10px">
+                    <div class="btn-group" data-toggle="buttons">
+                        <label class="btn btn-warning active">
+                            <input type="radio" name="options" id="part" checked value="Part"> Part
+                        </label>
+                        <label class="btn btn-warning">
+                            <input type="radio" name="options" id="assembly" value="Assembly"> Assembly
+                        </label>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="activity"> Running activity name : </label>
-                    <label id="activity">TranslatorPluginActivity+dev</label> 
+                <div class="row" id="part_inputs">
+                    <div class="form-group" >
+                        <label for="inputFile">Upload part file to translate into Inventor file</label>
+                        <input type="file" class="form-control-file" id="p_inputFile" accept=".cgr,.prt,.sldprt,.CATPart,.CATProduct,.model,.session,.exp,.dlv3,.igs,.ige,.iges,.jt,.rvt,.3dm,.stp,.ste,.step,.stpz,.sat,.smt,.stl,.stla,.stlb,.par, .psm,.dwf,.dwfx,.dxf,.dwg">
+                    </div>
+                    <div class="form-group" >
+                        <label for="p_activity"> Running activity name : </label>
+                        <label id="p_activity">TranslatorPluginActivity+dev</label>
+                    </div>
                 </div>
-                <center><button class="btn btn-primary" id="startWorkitem">Start migration</button></center><br />
-            </div>
-            <div class="col-sm-8">
+                <div class="row" id="assembly_inputs" hidden>
+                    <div class="form-group"  >
+                        <label for="inputFile">Upload assembly file to translate into Inventor file</label>
+                        <input type="file" class="form-control-file" id="a_inputFile" accept=".zip,.prt,.CATProduct,.sldasm" />
+                    </div>
+                    <div class="form-group">
+                        <label for="inputFile">Upload associated files to translate</label>
+                        <input type="file" class="form-control-file" id="a_inputFiles" multiple accept=".cgr,.prt,.sldprt,.CATPart,.CATProduct,.model,.session,.exp,.dlv3,.igs,.ige,.iges,.jt,.rvt,.3dm,.stp,.ste,.step,.stpz,.sat,.smt,.stl,.stla,.stlb,.par, .psm,.dwf,.dwfx,.dxf,.dwg">
+                    </div>
+                    <div class="form-group">
+                        <label for="a_activity"> Running activity name : </label>
+                        <label id="a_activity">TranslatorPluginActivityAsy+dev</label>
+                    </div>
+                </div>
+                <div class="row">                    
+                    <center><button class="btn btn-primary" id="startWorkitem">Start migration</button></center><br />
+                </div>                
+            </div> 
+
+            <div class="col-sm-7">
                 <pre id="outputlog" style="height:50%" ; overflow-y: scroll;"></pre>
             </div>
         </div>
@@ -63,7 +99,19 @@
         </div>
     </div>
      
-     
+    <script type="text/javascript">
+         
+        $('input:radio[name="options"]').change(function () {
+            if ($(this).val() == 'Part') {
+                $('#part_inputs').show();
+                $('#assembly_inputs').hide();
+            } else if ($(this).val() == 'Assembly'){
+                $('#part_inputs').hide();
+                $('#assembly_inputs').show();
+            }
+        });
+
+    </script>
 </body>
 
 </html>
