@@ -26,12 +26,16 @@ namespace ForgeCADMigration
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
+            app.UseFileServer();
             app.UseRouting();
             app.UseEndpoints(routes =>
             {
                 routes.MapHub<Controllers.DesignAutomationHub>("/api/signalr/designautomation");
+            }); 
+            app.UseStaticFiles(new StaticFileOptions()
+            {
+                ServeUnknownFileTypes = true
             });
-            app.UseFileServer();
             app.UseMvc();
         }
     }

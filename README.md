@@ -11,9 +11,13 @@
 
 Design migration is a web application that migrates other CAD files into Inventor files. It also visualize the migrated file using "Forge Viewer" API. Other CAD files like CATIA, Solidworks, Unigraphics NX, Step, IGES, STL files etc., are migrated into Inventor files (Note: Still, working on creo files to migrate). This project is wokring only for part files and extended to work for assembly files shortly.
 
-## Thumbnail
+## Thumbnail for part
 
-![thumbnail](thumbnail.gif)
+![thumbnail](thumbnail_part.gif)
+
+## Thumbnail for assembly
+
+![thumbnail](thumbnail_assy.gif)
 
 # Setup
 

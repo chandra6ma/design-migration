@@ -93,6 +93,9 @@ var connectionId;
         connection.on("downloadResult", function (url) {
             writeLog('<a href="' + url + '">Download result file here</a>');
         });
+        connection.on("onTracing", function (message) {
+            writeLog(message);
+        });
 
         connection.on("onComplete", function (urnipt) {
             launchViewer(urnipt);

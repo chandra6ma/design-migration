@@ -11,7 +11,6 @@ using Newtonsoft.Json.Linq;
 using RestSharp;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -288,9 +287,9 @@ namespace ForgeCADMigration.Controllers
             if (fileType == "assembly")
             {
                 string path = _env.ContentRootPath;
-                Trace.TraceInformation("Zipping started");
+                //await _hubContext.Clients.Client(browerConnectionId).SendAsync("onTracing", "Before zipping");
                 string fileSavePath = await CreateZipFileStreamAsync(input.inputFile, input.inputFiles, path);
-
+                //await _hubContext.Clients.Client(browerConnectionId).SendAsync("onTracing", "After zipping");
                 // OAuth token
                 dynamic oauth = await OAuthController.GetInternalAsync();
 
@@ -428,9 +427,8 @@ namespace ForgeCADMigration.Controllers
         }
 
 
-        private static async Task<string> CreateZipFileStreamAsync(IFormFile file, IFormFile[] files, string contentPath)
+        private async Task<string> CreateZipFileStreamAsync(IFormFile file, IFormFile[] files, string contentPath)
         {
-            Trace.TraceInformation("Zip entered");
             string assyZipPath = "";
             string  fileSavePath = Path.Combine(contentPath, Path.GetFileName(file.FileName));
             using (var stream = new FileStream(fileSavePath, FileMode.Create)) await file.CopyToAsync(stream);
@@ -455,11 +453,8 @@ namespace ForgeCADMigration.Controllers
                         zipArchiveEntry = archive.CreateEntryFromFile(item.FullName, item.Name, CompressionLevel.Fastest);
                         item.Delete();
                     }
-
-                    archive.Dispose();
                     
                 }
-                
                 assyZipPath = contentPath + @"\" + archiveName + ".zip";
                 using (var fileStream = new FileStream(assyZipPath, FileMode.Create))
                 {
@@ -467,7 +462,7 @@ namespace ForgeCADMigration.Controllers
                     archiveStream.CopyTo(fileStream);
                 }
             }
-            Trace.TraceInformation("Zip exited");
+            
             return assyZipPath;
         }
         /// <summary>
